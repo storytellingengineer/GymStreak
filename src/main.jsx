@@ -51,9 +51,40 @@ function Home({h,st,type,done,start,stats,p}){
  <div className="widget card"><div><div className="widgetTitle">GymStreak <Flame size={14}/></div><b>🔥 {st} DAY STREAK</b><span>{done?"Workout complete":type+" · Start today's mission"}</span></div><div className="widgetButton">WIDGET</div></div></section>
 }
 function Workout({s,sec,edit,toggle,finish,back,unit}){
- const total=s.exercises.reduce((n,e)=>n+e.targetSets,0),done=s.exercises.reduce((n,e)=>n+e.sets.filter(x=>x.logged).length,0),pct=Math.round(done/Math.max(1,total)*100);
- return <section className="stack"><div className="sectionTitle"><button className="back" onClick={back}><ArrowLeft/>Back</button><div className="workoutTitle"><span className="eyebrow">WORKOUT</span><h1>{s.type} Day</h1></div><span className="timer"><Timer size={15}/>{String(Math.floor(sec/60)).padStart(2,"0")}:{String(sec%60).padStart(2,"0")}</span></div><div className="progress card"><div><b>{done}/{total} sets</b><span>{pct}%</span></div><div className="bar"><i style={{width:pct+"%"}}/></div></div>
- {s.exercises.map((e,ei)=><div className="exercise card" key={e.name}><div className="exerciseTop"><div><strong>{e.name}</strong><p>{e.targetSets} × {e.targetReps} reps · working weight</p></div><span>{e.sets.filter(x=>x.logged).length}/{e.targetSets}</span></div><div className="setHeader"><span>SET</span><span>WEIGHT ({unit})</span><span>REPS</span><span/></div>{e.sets.map((x,si)=><div className={x.logged?"setRow logged":"setRow"} key={si}><b>{si+1}</b><input inputMode="decimal" value={x.weight} onChange={ev=>edit(ei,si,"weight",ev.target.value)} placeholder="0"/><input inputMode="numeric" value={x.reps} onChange={ev=>edit(ei,si,"reps",ev.target.value)} placeholder={String(e.targetReps)}/><button className="setCheck" onClick={()=>toggle(ei,si}>{x.logged?<Check/>:<Plus/>}</button></div>)}</div>)}<button className="primary" onClick={finish} disabled={!done}><Check/>Finish workout · {done} sets</button></section>
+ const total=s.exercises.reduce((n,e)=>n+e.targetSets,0);
+ const done=s.exercises.reduce((n,e)=>n+e.sets.filter(x=>x.logged).length,0);
+ const pct=Math.round(done/Math.max(1,total)*100);
+ return (
+  <section className="stack">
+   <div className="sectionTitle">
+    <button className="back" onClick={back}><ArrowLeft/>Back</button>
+    <div className="workoutTitle"><span className="eyebrow">WORKOUT</span><h1>{s.type} Day</h1></div>
+    <span className="timer"><Timer size={15}/>{String(Math.floor(sec/60)).padStart(2,"0")}:{String(sec%60).padStart(2,"0")}</span>
+   </div>
+   <div className="progress card">
+    <div><b>{done}/{total} sets</b><span>{pct}%</span></div>
+    <div className="bar"><i style={{width:pct+"%"}}/></div>
+   </div>
+   {s.exercises.map((e,ei)=>(
+    <div className="exercise card" key={e.name}>
+     <div className="exerciseTop">
+      <div><strong>{e.name}</strong><p>{e.targetSets} × {e.targetReps} reps · working weight</p></div>
+      <span>{e.sets.filter(x=>x.logged).length}/{e.targetSets}</span>
+     </div>
+     <div className="setHeader"><span>SET</span><span>WEIGHT ({unit})</span><span>REPS</span><span/></div>
+     {e.sets.map((x,si)=>(
+      <div className={x.logged?"setRow logged":"setRow"} key={si}>
+       <b>{si+1}</b>
+       <input inputMode="decimal" value={x.weight} onChange={ev=>edit(ei,si,"weight",ev.target.value)} placeholder="0"/>
+       <input inputMode="numeric" value={x.reps} onChange={ev=>edit(ei,si,"reps",ev.target.value)} placeholder={String(e.targetReps)}/>
+       <button className="setCheck" onClick={()=>toggle(ei,si)}>{x.logged?<Check/>:<Plus/>}</button>
+      </div>
+     ))}
+    </div>
+   ))}
+   <button className="primary" onClick={finish} disabled={!done}><Check/>Finish workout · {done} sets</button>
+  </section>
+ );
 }
 function History({h}){return <section className="stack"><div className="sectionTitle"><div><span className="eyebrow">YOUR JOURNEY</span><h1>Workout history</h1></div></div>{h.length?h.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(x=><div className="historyRow card" key={x.id}><div className="historyIcon"><Dumbbell/></div><div className="grow"><strong>{x.type} Day</strong><p>{fmt(x.date)} · {(x.sets||[]).length} sets · {x.duration} min</p><span className="volume">{volume(x)?Math.round(volume(x)).toLocaleString()+" volume":"No weight logged"}</span></div><Check/></div>):<div className="empty card"><Dumbbell size={30}/><strong>No workouts yet</strong><p>Start your first mission and your training history will appear here.</p></div>}</section>}
 function Progress({h,unit}){const names=[...new Set(h.flatMap(w=>(w.sets||[]).map(x=>x.exercise).filter(Boolean)))],bests=names.map(name=>{const rows=h.flatMap(w=>(w.sets||[]).filter(x=>x.exercise===name).map(x=>({...x,date:w.date}))).filter(x=>Number(x.weight)>0).sort((a,b)=>b.date.localeCompare(a.date));return{name,max:rows.reduce((m,x)=>Math.max(m,Number(x.weight)||0),0),last:rows[0]}}).sort((a,b)=>b.max-a.max),mx=Math.max(1,...h.map(volume));return <section className="stack"><div className="sectionTitle"><div><span className="eyebrow">PERFORMANCE</span><h1>Progress</h1></div><BarChart3/></div><div className="grid2"><div className="metric card"><span>Total volume</span><strong>{Math.round(h.reduce((n,x)=>n+volume(x),0)).toLocaleString()}</strong><small>{unit} lifted</small></div><div className="metric card"><span>Sessions</span><strong>{h.length}</strong><small>all time</small></div></div><div className="card chartCard"><div className="cardTitle"><strong>Session volume</strong><span>recent</span></div>{h.slice().sort((a,b)=>a.date.localeCompare(b.date)).slice(-8).map(w=><div className="chartRow" key={w.id}><span>{short(w.date)}</span><div><i style={{width:Math.round(volume(w)/mx*100)+"%"}}/></div><b>{Math.round(volume(w)).toLocaleString()}</b></div>)}{!h.length&&<div className="emptyMini">Complete workouts to see your trend.</div>}</div><div className="card listCard"><div className="cardTitle"><strong>Personal bests</strong><span>{unit}</span></div>{bests.length?bests.slice(0,8).map(x=><div className="pbRow" key={x.name}><div><strong>{x.name}</strong><small>Latest: {x.last.weight} {unit} × {x.last.reps}</small></div><b>{x.max} {unit}</b></div>):<div className="emptyMini">Your logged weights will create progression data.</div>}</div></section>}

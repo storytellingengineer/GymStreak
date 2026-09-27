@@ -1,0 +1,4 @@
+entrypoint = "index.html"
+
+[deployment]
+run = ["npm", "run", "dev"]
